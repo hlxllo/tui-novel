@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="vip.xiaozhao.intern.baseUtil.intf.mapper.ImageMapper">
+
+    <insert id="insertImage" parameterType="java.lang.String">
+        INSERT INTO image (url)
+        VALUES (#{url})
+    </insert>
+
+    <select id="getImageById" parameterType="java.lang.Integer" resultType="vip.xiaozhao.intern.baseUtil.intf.entity.Image">
+        SELECT id, url
+        FROM image
+        WHERE id = #{id}
+    </select>
+</mapper>
