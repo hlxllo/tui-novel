@@ -11,6 +11,10 @@ public class RedisConstant {
     public static String auth;
     public static String envName;
 
+    public static final String preUserId = "userId:";
+    public static final String preNovelId = "novelId:";
+    public static final String HOT_NOVEL_LIST = "hotNovelList:";
+
     @Value("${redis.ip}")
     public  void setHostName(String hostName) {
         RedisConstant.hostName = hostName;

@@ -11,6 +11,7 @@ import vip.xiaozhao.intern.baseUtil.intf.constant.RedisConstant;
 import vip.xiaozhao.intern.baseUtil.intf.utils.JsonUtils;
 
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -213,6 +214,59 @@ public class RedisUtils {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    // 根据小说 id 删除
+    public static boolean deleteUserIdFromNovelId(int userId, int novelId) {
+        Jedis jedis = null;
+        try {
+            jedis = getJedis();
+            // 构造 Redis 的 key，例如 "novel:users:{novelId}"
+            String key = RedisConstant.preNovelId + novelId;
+            // 使用 srem 方法从集合中移除 userId
+            Long result = jedis.srem(key, String.valueOf(userId));
+            // 如果移除成功（result > 0），返回 true
+            return result > 0;
+        } catch (Exception e) {
+            log.debug("从 Set 中删除 userId 发生异常.", e);
+            return false;
+        } finally {
+            getClose(jedis);
+        }
+    }
+
+    public static boolean addToSet(String key, Object value, int seconds,boolean isPermanent) {
+        Jedis jedis = null;
+        try {
+            jedis = getJedis();
+            Long result = jedis.sadd(key, String.valueOf(value)); // 使用sadd方法添加到集合
+            if (result > 0) {
+                if(!isPermanent){
+                    jedis.expire(key, seconds); // 设置过期时间
+                }
+                return true;
+            }
+        } catch (Exception e) {
+            log.debug("添加到 Set 发生异常.");
+            return false;
+        } finally {
+            getClose(jedis);
+        }
+        return false;
+    }
+
+    public static Set<String> getSetMembers(String key) {
+        Jedis jedis = null;
+        Set<String> members = null;
+        try {
+            jedis = getJedis();
+            members = jedis.smembers(key); // 获取集合成员
+        } catch (Exception e) {
+            log.debug("获取集合成员发生异常.");
+        } finally {
+            getClose(jedis);
+        }
+        return members;
     }
 
 }
