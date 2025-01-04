@@ -12,6 +12,12 @@
     <artifactId>intern-base-intf</artifactId>
 
     <dependencies>
+        <!--AOP-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+            <version>3.1.10</version>
+        </dependency>
         <!--credentials-->
         <dependency>
             <groupId>com.aliyun</groupId>

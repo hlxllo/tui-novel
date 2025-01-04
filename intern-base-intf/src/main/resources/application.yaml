@@ -13,3 +13,40 @@ dromara:
         bucket-name: web-tlias-sa
         domain: https://web-tlias-sa.oss-cn-hangzhou.aliyuncs.com/ # 访问域名，注意“/”结尾，例如：https://abc.oss-cn-shanghai.aliyuncs.com/
         base-path: dkd-images/ # 基础路径
+
+spring:
+  datasource:
+    # 主库配置
+    master:
+      url: jdbc:mysql://192.168.26.3:3307/xiaozhaovip_tuitui3
+      username: root
+      password: 123
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      type: com.alibaba.druid.pool.DruidDataSource
+    #      druid:
+    #        initial-size: 5
+    #        min-idle: 5
+    #        max-active: 20
+    #        max-wait: 60000
+    #        time-between-eviction-runs-millis: 60000
+    #        min-evictable-idle-time-millis: 300000
+    #        validation-query: SELECT 1
+    #        test-while-idle: true
+    #        test-on-borrow: false
+    #        test-on-return: false
+    #        filters: stat, wall, log4j
+
+    # 从库配置
+    slaves:
+      - url: jdbc:mysql://192.168.26.3:3308/xiaozhaovip_tuitui3
+        username: root
+        password: 123
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        type: com.alibaba.druid.pool.DruidDataSource
+
+#      - url: jdbc:mysql://localhost:3306/xiaozhaovip_tuitui3
+#        username: root
+#        password: password
+#        driver-class-name: com.mysql.cj.jdbc.Driver
+#        type: com.alibaba.druid.pool.DruidDataSource
+

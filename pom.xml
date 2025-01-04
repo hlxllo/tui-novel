@@ -25,6 +25,12 @@
 
     <dependencyManagement>
         <dependencies>
+            <!--AOP-->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-aop</artifactId>
+                <version>3.1.10</version>
+            </dependency>
             <!--redis-->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
