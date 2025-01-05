@@ -13,8 +13,8 @@ public class NovelInfoServiceImpl implements NovelInfoService {
     private NovelInfoMapper novelInfoMapper;
     @Override
     public NovelInfo getNovelInfoByNovelId(int novelId) {
-        NovelInfo novelInfoByNovelId = novelInfoMapper.getNovelInfoByNovelId(novelId);
-        return novelInfoByNovelId;
+        NovelInfo novelInfo = novelInfoMapper.getNovelInfoByNovelId(novelId);
+        return novelInfo;
     }
 
 }

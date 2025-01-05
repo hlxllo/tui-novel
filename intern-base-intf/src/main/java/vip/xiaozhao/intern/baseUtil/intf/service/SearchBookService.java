@@ -1,20 +1,21 @@
 package vip.xiaozhao.intern.baseUtil.intf.service;
 
 import vip.xiaozhao.intern.baseUtil.intf.DO.HotNovelDO;
-import vip.xiaozhao.intern.baseUtil.intf.DO.NovelDO;
+import vip.xiaozhao.intern.baseUtil.intf.entity.HotNovelInfo;
+import vip.xiaozhao.intern.baseUtil.intf.vo.NovelBasicInfoVo;
 
 import java.util.List;
 
 public interface SearchBookService {
 
-    public List<NovelDO> searchNovelList(int start,int pageSize,String query);
+    List<NovelBasicInfoVo> searchNovelBasicList(int start, int pageSize, String query);
 
-    public void incrementNovelSearchNum(int novelId);
+    void incrementNovelSearchNum(int novelId);
 
-    public void inserIntoHotBook(int id,String bookName);
+    void insertHotBook(int id, String bookName);
 
-    public HotNovelDO getHotNovelByNovelId(int novelId);
+    HotNovelInfo getHotNovelByNovelId(int novelId);
 
-    public List<HotNovelDO> getHotNovelList();
+    List<HotNovelDO> getHotNovelList();
 
 }

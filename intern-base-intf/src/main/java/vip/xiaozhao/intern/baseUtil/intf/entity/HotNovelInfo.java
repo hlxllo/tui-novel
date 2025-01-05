@@ -1,9 +1,9 @@
-package vip.xiaozhao.intern.baseUtil.intf.DO;
+package vip.xiaozhao.intern.baseUtil.intf.entity;
 
 import lombok.Data;
 
 @Data
-public class HotNovelDO
+public class HotNovelInfo
 {
 
     private int id;

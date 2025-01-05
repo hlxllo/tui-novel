@@ -2,46 +2,53 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="vip.xiaozhao.intern.baseUtil.intf.mapper.SearchBookMapper">
 
-
-    <insert id="inserIntoHotBook" parameterType="vip.xiaozhao.intern.baseUtil.intf.entity.NovelInfo">
-        insert into vip_search_hot (bookId, bookName,times) values (#{id},#{bookName},0)
+    <insert id="insertHotBook" parameterType="vip.xiaozhao.intern.baseUtil.intf.entity.NovelInfo">
+        insert into vip_search_hot (bookId, bookName, times)
+        values (#{id}, #{bookName}, 1)
     </insert>
+
     <update id="incrementNovelSearchNum" parameterType="int">
-        update vip_search_hot set times = times + 1 where bookId = #{novellId}
+        update vip_search_hot
+        set times = times + 1
+        where bookId = #{novellId}
 
     </update>
 
-
-    <select id="searchNovelList" resultType="vip.xiaozhao.intern.baseUtil.intf.DO.NovelDO">
-        SELECT
-            id,
-            AuthorId,
-            BookName,
-            AuthorName,
-            `Desc` AS Description
-        FROM
-            novel_info
+    <select id="searchNovelBasicList" resultType="vip.xiaozhao.intern.baseUtil.intf.vo.NovelBasicInfoVo">
+        SELECT id,
+               BookName,
+               AuthorName,
+               SubscribeNum,
+               Cover,
+               LatestChapterId,
+               LatestChapter
+        FROM novel_info
         WHERE
-            MATCH(BookName, AuthorName)
-                  AGAINST(#{query} IN NATURAL LANGUAGE MODE) and status != 0
+            MATCH (BookName
+            , AuthorName)
+            AGAINST(#{query} IN NATURAL LANGUAGE MODE)
+          and status != 0
         ORDER BY
             SubscribeNum DESC
-        LIMIT #{pageSize} OFFSET #{start};
-
-
+            LIMIT #{pageSize}
+        OFFSET #{start};
     </select>
-    <select id="getHotNovelByNovelId" parameterType="int" resultType="vip.xiaozhao.intern.baseUtil.intf.DO.HotNovelDO">
-        select id,bookName,bookId,times,status from vip_search_hot where bookId = #{novelId} and status != 0
+
+    <select id="getHotNovelByNovelId" parameterType="int"
+            resultType="vip.xiaozhao.intern.baseUtil.intf.entity.HotNovelInfo">
+        select id, bookName, bookId, times
+        from vip_search_hot
+        where bookId = #{novelId}
+          and status != 0
     </select>
+
     <select id="getHotNovelList" resultType="vip.xiaozhao.intern.baseUtil.intf.DO.HotNovelDO">
         SELECT id, bookName, bookId, times, status
         FROM vip_search_hot
         WHERE status != 0
           AND updateTime >= CURDATE() - INTERVAL 10 DAY
         ORDER BY times DESC
-        LIMIT 100;
-
+            LIMIT 100;
     </select>
-
 
 </mapper>

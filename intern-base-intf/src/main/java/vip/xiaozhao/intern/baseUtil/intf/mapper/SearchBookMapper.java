@@ -1,24 +1,25 @@
 package vip.xiaozhao.intern.baseUtil.intf.mapper;
 
 import vip.xiaozhao.intern.baseUtil.intf.DO.HotNovelDO;
-import vip.xiaozhao.intern.baseUtil.intf.DO.NovelDO;
 import vip.xiaozhao.intern.baseUtil.intf.annotation.ReadOnly;
+import vip.xiaozhao.intern.baseUtil.intf.entity.HotNovelInfo;
+import vip.xiaozhao.intern.baseUtil.intf.vo.NovelBasicInfoVo;
 
 import java.util.List;
 
 public interface SearchBookMapper {
 
     @ReadOnly
-    public List<NovelDO> searchNovelList(int start,int pageSize,String query);
+    List<NovelBasicInfoVo> searchNovelBasicList(int start, int pageSize, String query);
 
-    public void incrementNovelSearchNum(int novellId);
+    void incrementNovelSearchNum(int novellId);
 
-    public void inserIntoHotBook(int id,String bookName);
-
-    @ReadOnly
-    public HotNovelDO getHotNovelByNovelId(int novelId);
+    void insertHotBook(int id, String bookName);
 
     @ReadOnly
-    public List<HotNovelDO> getHotNovelList();
+    HotNovelInfo getHotNovelByNovelId(int novelId);
+
+    @ReadOnly
+    List<HotNovelDO> getHotNovelList();
 
 }
