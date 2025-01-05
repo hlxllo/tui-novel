@@ -1,27 +1,26 @@
 package vip.xiaozhao.intern.baseUtil.intf.service;
 
-import vip.xiaozhao.intern.baseUtil.intf.entity.YikeNovelBookshelf;
+import vip.xiaozhao.intern.baseUtil.intf.entity.Bookshelf;
 
 import java.util.List;
 
 public interface BookShelfService {
 
-    public List<YikeNovelBookshelf> getBookShelfByUserId(int userId) throws Exception;
+    List<Bookshelf> getBookShelfByUserId(int userId) throws Exception;
 
-    public void readChapter(int userId,int novelId,int chapterId) throws Exception;
+    void readChapter(int userId, int novelId, int chapterId) throws Exception;
 
-    public void updateTopBook(int userID,int novelId) throws Exception;
+    void updateTopBook(int userId, int novelId) throws Exception;
 
-    public void deleteBookByUserIdAndNovelId(int userID,int novelId) throws Exception;
+    void deleteBookByUserIdAndNovelId(int userId, int novelId) throws Exception;
 
-    public void subscribeNovel(int userID,int novelId) throws Exception;
+    void subscribeNovel(int userId, int novelId) throws Exception;
 
-    public void updateIsReadByUserIdAndNovelId(int userId,int novelId) throws Exception;
+    void updateIsReadByUserIdAndNovelId(int userId, int novelId) throws Exception;
 
-    public void updateIsReadByNovelId(int userId,int NovelId) throws Exception;
+    void updateIsReadByNovelId(int novelId) throws Exception;
 
-    public void updateIsReadByNovelIdList(int userID,List<Integer> novelIds) throws Exception;
-
+    void updateIsReadByNovelIdList(List<Integer> novelIds) throws Exception;
 
 
 }

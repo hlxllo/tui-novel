@@ -29,6 +29,7 @@ public class SearchBookController extends BaseController {
     @Resource
     private NovelInfoService novelInfoService;
 
+    // 全文检索小说（书名和作者）
     @GetMapping("/searchNovelList")
     public ResponseDO searchNovelList(@RequestParam(name = "page") int page,
                                       @RequestParam(name = "query") String query) {
@@ -40,6 +41,7 @@ public class SearchBookController extends BaseController {
         return ResponseDO.success(vos);
     }
 
+    // 增加搜索次数
     @PostMapping("/incrementNovelSearchNum/{novelId}")
     public ResponseDO incrementNovelSearchNum(@PathVariable(required = true) int novelId) {
         if (novelId < 1) {
@@ -63,6 +65,7 @@ public class SearchBookController extends BaseController {
 
 
     // TODO 10天的还没搞定
+    // 获取热榜小说（10本）
     @GetMapping("/getHotNovelList")
     public ResponseDO getHotNovelList() {
         String redisHotNovelList = RedisUtils.get(RedisConstant.HOT_NOVEL_LIST);

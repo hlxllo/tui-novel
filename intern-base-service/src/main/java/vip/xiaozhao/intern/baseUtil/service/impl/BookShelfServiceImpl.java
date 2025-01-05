@@ -1,28 +1,30 @@
 package vip.xiaozhao.intern.baseUtil.service.impl;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.annotation.Resource;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import vip.xiaozhao.intern.baseUtil.intf.constant.RedisConstant;
 import vip.xiaozhao.intern.baseUtil.intf.entity.NovelInfo;
-import vip.xiaozhao.intern.baseUtil.intf.entity.YikeNovelBookshelf;
-import vip.xiaozhao.intern.baseUtil.intf.entity.YikeNovelSubscribeAudit;
+import vip.xiaozhao.intern.baseUtil.intf.entity.Bookshelf;
+import vip.xiaozhao.intern.baseUtil.intf.entity.SubscribeAudit;
 import vip.xiaozhao.intern.baseUtil.intf.mapper.BookShelfMapper;
 import vip.xiaozhao.intern.baseUtil.intf.service.BookShelfService;
 import vip.xiaozhao.intern.baseUtil.intf.service.NovelInfoService;
-import vip.xiaozhao.intern.baseUtil.intf.utils.JsonUtils;
+import vip.xiaozhao.intern.baseUtil.intf.utils.ConvertUtils;
 import vip.xiaozhao.intern.baseUtil.intf.utils.redis.RedisUtils;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 public class BookShelfServiceImpl implements BookShelfService {
+
+    private static final int BATCH_SIZE = 100;
 
     @Resource
     private BookShelfMapper bookShelfMapper;
@@ -30,156 +32,135 @@ public class BookShelfServiceImpl implements BookShelfService {
     @Resource
     private NovelInfoService novelInfoService;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    @Resource
+    private RedisTemplate redisTemplate;
 
 
     @Override
-    public List<YikeNovelBookshelf> getBookShelfByUserId(int userId) throws Exception {
-        String strUserId = String.valueOf(userId);
-        if (RedisUtils.get(RedisConstant.preUserId + strUserId, List.class) == null) {
-            List<YikeNovelBookshelf> bookShelfByUserId = bookShelfMapper.getBookShelfByUserId(userId);
-            if (bookShelfByUserId == null || bookShelfByUserId.isEmpty()) {
-                return null;
+    public List<Bookshelf> getBookShelfByUserId(int userId) throws Exception {
+        String key = RedisConstant.preUserId + userId;
+        Object o = redisTemplate.opsForValue().get(key);
+        List<Bookshelf> bookShelf;
+        if (o == null) {
+            bookShelf = bookShelfMapper.getBookShelfByUserId(userId);
+            if (bookShelf == null) {
+                throw new RuntimeException("用户不存在");
             }
-            bookShelfByUserId.sort((o1, o2) -> o2.getIsTop() - o1.getIsTop());
-            String str = JsonUtils.toStr(bookShelfByUserId);
-            RedisUtils.set(RedisConstant.preUserId + strUserId, str, RedisUtils.EXRP_ONE_HOUR);
-            return bookShelfByUserId;
+            // 顶置排序
+            bookShelf.sort((o1, o2) -> o2.getIsTop() - o1.getIsTop());
+            redisTemplate.opsForValue().set(key, bookShelf, RedisUtils.EXRP_ONE_HOUR, TimeUnit.SECONDS);
         } else {
-            String strList = RedisUtils.get(RedisConstant.preUserId + strUserId);
-            ArrayList<YikeNovelBookshelf> yikeNovelBookshelves = parseStringToList(strList);
-            System.out.println("yikeNovelBookshelves " + yikeNovelBookshelves);
-            return yikeNovelBookshelves;
+            bookShelf = ConvertUtils.convert2List(o, Bookshelf.class);
         }
-    }
-
-    private ArrayList<YikeNovelBookshelf> parseStringToList(String jsonString) throws Exception {
-        try {
-            return objectMapper.readValue(jsonString, new TypeReference<ArrayList<YikeNovelBookshelf>>() {
-            });
-        } catch (MismatchedInputException e) {
-            //throw new RuntimeException("JSON 格式错误，无法解析为对象列表");
-            // 如果失败，尝试将字符串转为数组后再反序列化
-            String[] items = jsonString.split(",");
-            ArrayList<YikeNovelBookshelf> list = new ArrayList<>();
-            for (String item : items) {
-                YikeNovelBookshelf bookshelf = objectMapper.readValue(item, YikeNovelBookshelf.class);
-                list.add(bookshelf);
-            }
-            return list;
-        }
-    }
-
-    @Override
-    public void readChapter(int userID, int novelId, int chapterId) throws Exception {
-        List<YikeNovelSubscribeAudit> subscribeAuditByUserIdAndNovelId = bookShelfMapper.getSubscribeAuditByUserIdAndNovelId(userID, novelId);
-
-        if (subscribeAuditByUserIdAndNovelId != null && !subscribeAuditByUserIdAndNovelId.isEmpty()) {
-            bookShelfMapper.updateSubscribeAuditChapterId(userID, novelId, chapterId);
-        } else {
-            bookShelfMapper.readChapter(userID, novelId, chapterId);
-        }
-        RedisUtils.remove(RedisConstant.preUserId + String.valueOf(userID));
-        getBookShelfByUserId(userID);
+        return bookShelf;
     }
 
 
     @Override
-    public void updateTopBook(int userID, int novelId) throws Exception {
-        List<YikeNovelBookshelf> bookShelfByUserId = getBookShelfByUserId(userID);
-        int isTopID = -1;
-        for (YikeNovelBookshelf yikeNovelBookshelf : bookShelfByUserId) {
-            if (yikeNovelBookshelf.getIsTop() == 1) {
-                isTopID = yikeNovelBookshelf.getNovelId();
+    public void readChapter(int userId, int novelId, int chapterId) throws Exception {
+        List<SubscribeAudit> subscribeAudit = bookShelfMapper.getSubscribeAuditByUserIdAndNovelId(userId, novelId);
+
+        if (!CollUtil.isEmpty(subscribeAudit)) {
+            bookShelfMapper.updateSubscribeAuditChapterId(userId, novelId, chapterId);
+        } else {
+            bookShelfMapper.readChapter(userId, novelId, chapterId);
+        }
+        // 删除缓存防止脏读
+        redisTemplate.delete(RedisConstant.preUserId + userId);
+    }
+
+
+    @Override
+    public void updateTopBook(int userId, int novelId) throws Exception {
+        List<Bookshelf> books = getBookShelfByUserId(userId);
+        // 是否订阅了这本书
+        // 获取所有的小说 id
+        List<Integer> ids = books.stream().map(Bookshelf::getNovelId).toList();
+        if (!ids.contains(novelId)) {
+            throw new RuntimeException("用户没有订阅该小说");
+        }
+        int isTopId = -1;
+        for (Bookshelf book : books) {
+            if (book.getIsTop() == 1) {
+                isTopId = book.getNovelId();
                 break;
             }
         }
-        if (isTopID != -1 && bookShelfByUserId.size() > 1) {
-            bookShelfMapper.updateTopBook(userID, isTopID);
+        // 只有一本书可以省一次
+        if (isTopId != -1 && books.size() > 1) {
+            bookShelfMapper.updateTopBook(userId, isTopId);
         }
-        bookShelfMapper.updateTopBook(userID, novelId);
-        RedisUtils.remove(RedisConstant.preUserId + String.valueOf(userID));
-        getBookShelfByUserId(userID);
+        bookShelfMapper.updateTopBook(userId, novelId);
+        // 删除缓存防止脏读
+        redisTemplate.delete(RedisConstant.preUserId + userId);
     }
 
     @Override
-    public void deleteBookByUserIdAndNovelId(int userID, int novelId) throws Exception {
-        List<YikeNovelBookshelf> bookShelfByUserId = getBookShelfByUserId(userID);
-        int flag = 0;
-        for (YikeNovelBookshelf yikeNovelBookshelf : bookShelfByUserId) {
-            if (yikeNovelBookshelf.getNovelId() == novelId) {
-                flag = 1;
-                break;
-            }
-        }
-        if (flag == 0) {
-            throw new RuntimeException("即将删除的小说不存在");
-        }
-        bookShelfMapper.deleteBookByUserIdAndNovelId(userID, novelId);
-        RedisUtils.remove(RedisConstant.preUserId + String.valueOf(userID));
-        getBookShelfByUserId(userID);
+    public void deleteBookByUserIdAndNovelId(int userId, int novelId) throws Exception {
+        getBookShelfByUserId(userId);
+        bookShelfMapper.deleteBookByUserIdAndNovelId(userId, novelId);
+        // 删除缓存防止脏读
+        redisTemplate.delete(RedisConstant.preUserId + userId);
 
-        RedisUtils.deleteUserIdFromNovelId(userID, novelId);
+        RedisUtils.deleteUserIdFromNovelId(userId, novelId);
 
     }
 
     @Override
-    public void subscribeNovel(int userID, int novelId) throws Exception {
-        List<YikeNovelBookshelf> bookShelfByUserId = getBookShelfByUserId(userID);
-        if (bookShelfByUserId.size() >= 5) {
+    public void subscribeNovel(int userId, int novelId) throws Exception {
+        List<Bookshelf> books = getBookShelfByUserId(userId);
+        if (books.size() >= 5) {
             throw new RuntimeException("小说已经满5本，不可以继续添加");
         }
-        NovelInfo novelInfoByNovelId = novelInfoService.getNovelInfoByNovelId(novelId);
-        YikeNovelBookshelf yikeNovelBookshelf = new YikeNovelBookshelf();
-        yikeNovelBookshelf.setUserId(userID);
-        yikeNovelBookshelf.setNovelId(novelId);
-        yikeNovelBookshelf.setBookName(novelInfoByNovelId.getBookName());
-        yikeNovelBookshelf.setCoverUrl(novelInfoByNovelId.getCover());
-        yikeNovelBookshelf.setAuthorName(novelInfoByNovelId.getAuthorName());
-        yikeNovelBookshelf.setLastUpdateTime(novelInfoByNovelId.getLastUpdateTime());
-        yikeNovelBookshelf.setLatestChapterId(novelInfoByNovelId.getLatestChapterId());
-        yikeNovelBookshelf.setLatestChapter(novelInfoByNovelId.getLatestChapter());
-        bookShelfMapper.subscribeBook(yikeNovelBookshelf);
-        RedisUtils.remove(RedisConstant.preUserId + String.valueOf(userID));
+        NovelInfo novelInfo = novelInfoService.getNovelInfoByNovelId(novelId);
+        Bookshelf bookshelf = getBookshelf(userId, novelId, novelInfo);
+        bookShelfMapper.subscribeBook(bookshelf);
+        // 删除缓存防止脏读
+        redisTemplate.delete(RedisConstant.preUserId + userId);
 
-        String redisKey = RedisConstant.preNovelId + novelId;
-        // 使用 Redis Set 存储用户 ID
+        String key = RedisConstant.preNovelId + novelId;
+        // 使用 Redis Set 存储用户 Id
         try {
-            RedisUtils.addToSet(redisKey, userID, RedisUtils.EXRP_ONE_HOUR, true);
-            System.out.println("用户 ID: " + userID + " 已添加到书籍: " + novelId + " 的用户列表中");
+            RedisUtils.addToSet(key, userId, RedisUtils.EXRP_ONE_HOUR, true);
+            System.out.println("用户 Id: " + userId + " 已添加到书籍: " + novelId + " 的用户列表中");
         } catch (Exception e) {
-            throw new RuntimeException("添加用户 ID 到 Redis Set 时出现异常", e);
+            throw new RuntimeException("添加用户 Id 到 Redis Set 时出现异常", e);
         }
 
-
-    }
-
-    @Override
-    public void updateIsReadByUserIdAndNovelId(int userID, int novelId) throws Exception {
-        bookShelfMapper.updateIsReadByUserIdAndNovelId(userID, novelId);
-        RedisUtils.remove(RedisConstant.preUserId + String.valueOf(userID));
-        getBookShelfByUserId(userID);
     }
 
 
     @Override
-    public void updateIsReadByNovelId(int userID, int NovelId) throws Exception {
+    public void updateIsReadByUserIdAndNovelId(int userId, int novelId) throws Exception {
+        bookShelfMapper.updateIsReadByUserIdAndNovelId(userId, novelId);
+        // 删除缓存防止脏读
+        redisTemplate.delete(RedisConstant.preUserId + userId);
+    }
+
+
+    @Override
+    public void updateIsReadByNovelId(int novelId) throws Exception {
         // redis 批量更新
-        Set<String> setMembers = RedisUtils.getSetMembers(RedisConstant.preNovelId + String.valueOf(NovelId));
-        if (setMembers == null || setMembers.isEmpty()) {
+        Set<String> setMembers = RedisUtils.getSetMembers(RedisConstant.preNovelId + novelId);
+        // 没人订阅，不需要更新
+        if (CollUtil.isEmpty(setMembers)) {
             return;
         }
-        List<Integer> userIDs = setMembers.stream()
+        List<Integer> userIds = setMembers.stream()
                 .map(Integer::valueOf)
                 .collect(Collectors.toList());
 
-        final int batchSize = 100;
-        int totalSize = userIDs.size();
+        int totalSize = userIds.size();
+        for (int i = 0; i < totalSize; i += BATCH_SIZE) {
+            int end = Math.min(i + BATCH_SIZE, totalSize);
+            List<Integer> batchUserIds = userIds.subList(i, end);
+            bookShelfMapper.updateIsReadByNovelId(novelId, batchUserIds);
+        }
 
-        for (int i = 0; i < totalSize; i += batchSize) {
-            int end = Math.min(i + batchSize, totalSize);
-            List<Integer> batchUserIDs = userIDs.subList(i, end);
-            bookShelfMapper.updateIsReadByNovelId(NovelId, batchUserIDs);
+        for (int i = 0; i < totalSize; i++) {
+            int userId = userIds.get(i);
+            // 删除缓存防止脏读
+            redisTemplate.delete(RedisConstant.preUserId + userId);
         }
          /*
          或者使用多线程处理
@@ -216,73 +197,50 @@ public class BookShelfServiceImpl implements BookShelfService {
         }
 
           */
-
-        RedisUtils.remove(RedisConstant.preUserId + String.valueOf(userID));
-        getBookShelfByUserId(userID);
 
     }
 
     @Override
-    public void updateIsReadByNovelIdList(int userID, List<Integer> novelIds) throws Exception {
-        for (Integer NovelId : novelIds) {
+    public void updateIsReadByNovelIdList(List<Integer> novelIds) throws Exception {
+        for (Integer novelId : novelIds) {
             // redis 批量更新
-            Set<String> setMembers = RedisUtils.getSetMembers(RedisConstant.preNovelId + String.valueOf(NovelId));
-            if (setMembers == null || setMembers.isEmpty()) {
+            Set<String> setMembers = RedisUtils.getSetMembers(RedisConstant.preNovelId + novelId);
+            if (CollUtil.isEmpty(setMembers)) {
                 return;
             }
-            List<Integer> userIDs = setMembers.stream()
+            List<Integer> userIds = setMembers.stream()
                     .map(Integer::valueOf)
                     .collect(Collectors.toList());
 
-            final int batchSize = 100;
-            int totalSize = userIDs.size();
+            int totalSize = userIds.size();
 
-            for (int i = 0; i < totalSize; i += batchSize) {
-                int end = Math.min(i + batchSize, totalSize);
-                List<Integer> batchUserIDs = userIDs.subList(i, end);
-                bookShelfMapper.updateIsReadByNovelId(NovelId, batchUserIDs);
+            for (int i = 0; i < totalSize; i += BATCH_SIZE) {
+                int end = Math.min(i + BATCH_SIZE, totalSize);
+                List<Integer> batchUserIds = userIds.subList(i, end);
+                bookShelfMapper.updateIsReadByNovelId(novelId, batchUserIds);
             }
-         /*
-         或者使用多线程处理
-        // 批处理大小
-        final int batchSize = 100; // 根据需要调整
-        int totalSize = userIDs.size();
-
-        // 创建线程池
-        ExecutorService executor = Executors.newFixedThreadPool(10); // 根据需要调整线程数
-        CountDownLatch latch = new CountDownLatch((totalSize + batchSize - 1) / batchSize); // 计算总的批次数
-
-        // 分批处理
-        for (int i = 0; i < totalSize; i += batchSize) {
-            final List<Integer> batchUserIDs = userIDs.subList(i, Math.min(i + batchSize, totalSize));
-
-            // 提交任务到线程池
-            executor.submit(() -> {
-                try {
-                    // 数据库更新操作
-                    bookShelfMapper.updateIsReadByNovelId(NovelId, batchUserIDs);
-                } finally {
-                    latch.countDown(); // 完成该批次后减少计数
-                }
-            });
+            for (int i = 0; i < totalSize; i++) {
+                int userId = userIds.get(i);
+                // 删除缓存防止脏读
+                redisTemplate.delete(RedisConstant.preUserId + userId);
+            }
         }
 
-        // 等待所有任务完成
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace(); // 处理异常
-        } finally {
-            executor.shutdown(); // 关闭线程池
-        }
-
-          */
-
-        }
-
-        RedisUtils.remove(RedisConstant.preUserId + String.valueOf(userID));
-        getBookShelfByUserId(userID);
     }
 
+
+    @NotNull
+    private static Bookshelf getBookshelf(int userId, int novelId, NovelInfo novelInfo) {
+        Bookshelf bookshelf = new Bookshelf();
+        bookshelf.setUserId(userId);
+        bookshelf.setNovelId(novelId);
+        bookshelf.setBookName(novelInfo.getBookName());
+        bookshelf.setCoverUrl(novelInfo.getCover());
+        bookshelf.setAuthorName(novelInfo.getAuthorName());
+        bookshelf.setLastUpdateTime(novelInfo.getLastUpdateTime());
+        bookshelf.setLatestChapterId(novelInfo.getLatestChapterId());
+        bookshelf.setLatestChapter(novelInfo.getLatestChapter());
+        return bookshelf;
+    }
 
 }

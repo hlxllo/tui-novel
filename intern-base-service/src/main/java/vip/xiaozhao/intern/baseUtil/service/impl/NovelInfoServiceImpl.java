@@ -11,6 +11,7 @@ public class NovelInfoServiceImpl implements NovelInfoService {
 
     @Resource
     private NovelInfoMapper novelInfoMapper;
+
     @Override
     public NovelInfo getNovelInfoByNovelId(int novelId) {
         NovelInfo novelInfo = novelInfoMapper.getNovelInfoByNovelId(novelId);
