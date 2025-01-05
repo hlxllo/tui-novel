@@ -3,12 +3,12 @@
 <mapper namespace="vip.xiaozhao.intern.baseUtil.intf.mapper.SearchBookMapper">
 
     <insert id="insertHotBook" parameterType="vip.xiaozhao.intern.baseUtil.intf.entity.NovelInfo">
-        insert into vip_search_hot (bookId, bookName, times)
+        insert into search_hot (bookId, bookName, times)
         values (#{id}, #{bookName}, 1)
     </insert>
 
     <update id="incrementNovelSearchNum" parameterType="int">
-        update vip_search_hot
+        update search_hot
         set times = times + 1
         where bookId = #{novellId}
 
@@ -37,14 +37,14 @@
     <select id="getHotNovelByNovelId" parameterType="int"
             resultType="vip.xiaozhao.intern.baseUtil.intf.entity.HotNovelInfo">
         select id, bookName, bookId, times
-        from vip_search_hot
+        from search_hot
         where bookId = #{novelId}
           and status != 0
     </select>
 
     <select id="getHotNovelList" resultType="vip.xiaozhao.intern.baseUtil.intf.DO.HotNovelDO">
         SELECT id, bookName, bookId, times, status
-        FROM vip_search_hot
+        FROM search_hot
         WHERE status != 0
           AND updateTime >= CURDATE() - INTERVAL 10 DAY
         ORDER BY times DESC

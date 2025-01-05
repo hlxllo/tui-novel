@@ -222,7 +222,7 @@ public class RedisUtils {
         try {
             jedis = getJedis();
             // 构造 Redis 的 key，例如 "novel:users:{novelId}"
-            String key = RedisConstant.preNovelId + novelId;
+            String key = RedisConstant.PRE_NOVEL_ID + novelId;
             // 使用 srem 方法从集合中移除 userId
             Long result = jedis.srem(key, String.valueOf(userId));
             // 如果移除成功（result > 0），返回 true

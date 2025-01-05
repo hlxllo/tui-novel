@@ -1,7 +1,6 @@
 package vip.xiaozhao.intern.baseUtil.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -38,7 +37,7 @@ public class BookShelfServiceImpl implements BookShelfService {
 
     @Override
     public List<Bookshelf> getBookShelfByUserId(int userId) throws Exception {
-        String key = RedisConstant.preUserId + userId;
+        String key = RedisConstant.PRE_USER_ID + userId;
         Object o = redisTemplate.opsForValue().get(key);
         List<Bookshelf> bookShelf;
         if (o == null) {
@@ -66,7 +65,7 @@ public class BookShelfServiceImpl implements BookShelfService {
             bookShelfMapper.readChapter(userId, novelId, chapterId);
         }
         // 删除缓存防止脏读
-        redisTemplate.delete(RedisConstant.preUserId + userId);
+        redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
     }
 
 
@@ -92,7 +91,7 @@ public class BookShelfServiceImpl implements BookShelfService {
         }
         bookShelfMapper.updateTopBook(userId, novelId);
         // 删除缓存防止脏读
-        redisTemplate.delete(RedisConstant.preUserId + userId);
+        redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
     }
 
     @Override
@@ -100,7 +99,7 @@ public class BookShelfServiceImpl implements BookShelfService {
         getBookShelfByUserId(userId);
         bookShelfMapper.deleteBookByUserIdAndNovelId(userId, novelId);
         // 删除缓存防止脏读
-        redisTemplate.delete(RedisConstant.preUserId + userId);
+        redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
 
         RedisUtils.deleteUserIdFromNovelId(userId, novelId);
 
@@ -116,9 +115,9 @@ public class BookShelfServiceImpl implements BookShelfService {
         Bookshelf bookshelf = getBookshelf(userId, novelId, novelInfo);
         bookShelfMapper.subscribeBook(bookshelf);
         // 删除缓存防止脏读
-        redisTemplate.delete(RedisConstant.preUserId + userId);
+        redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
 
-        String key = RedisConstant.preNovelId + novelId;
+        String key = RedisConstant.PRE_NOVEL_ID + novelId;
         // 使用 Redis Set 存储用户 Id
         try {
             RedisUtils.addToSet(key, userId, RedisUtils.EXRP_ONE_HOUR, true);
@@ -134,14 +133,14 @@ public class BookShelfServiceImpl implements BookShelfService {
     public void updateIsReadByUserIdAndNovelId(int userId, int novelId) throws Exception {
         bookShelfMapper.updateIsReadByUserIdAndNovelId(userId, novelId);
         // 删除缓存防止脏读
-        redisTemplate.delete(RedisConstant.preUserId + userId);
+        redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
     }
 
 
     @Override
     public void updateIsReadByNovelId(int novelId) throws Exception {
         // redis 批量更新
-        Set<String> setMembers = RedisUtils.getSetMembers(RedisConstant.preNovelId + novelId);
+        Set<String> setMembers = RedisUtils.getSetMembers(RedisConstant.PRE_NOVEL_ID + novelId);
         // 没人订阅，不需要更新
         if (CollUtil.isEmpty(setMembers)) {
             return;
@@ -160,7 +159,7 @@ public class BookShelfServiceImpl implements BookShelfService {
         for (int i = 0; i < totalSize; i++) {
             int userId = userIds.get(i);
             // 删除缓存防止脏读
-            redisTemplate.delete(RedisConstant.preUserId + userId);
+            redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
         }
          /*
          或者使用多线程处理
@@ -204,7 +203,7 @@ public class BookShelfServiceImpl implements BookShelfService {
     public void updateIsReadByNovelIdList(List<Integer> novelIds) throws Exception {
         for (Integer novelId : novelIds) {
             // redis 批量更新
-            Set<String> setMembers = RedisUtils.getSetMembers(RedisConstant.preNovelId + novelId);
+            Set<String> setMembers = RedisUtils.getSetMembers(RedisConstant.PRE_NOVEL_ID + novelId);
             if (CollUtil.isEmpty(setMembers)) {
                 return;
             }
@@ -222,7 +221,7 @@ public class BookShelfServiceImpl implements BookShelfService {
             for (int i = 0; i < totalSize; i++) {
                 int userId = userIds.get(i);
                 // 删除缓存防止脏读
-                redisTemplate.delete(RedisConstant.preUserId + userId);
+                redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
             }
         }
 
