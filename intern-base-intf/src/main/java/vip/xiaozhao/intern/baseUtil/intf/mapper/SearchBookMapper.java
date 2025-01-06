@@ -1,6 +1,5 @@
 package vip.xiaozhao.intern.baseUtil.intf.mapper;
 
-import vip.xiaozhao.intern.baseUtil.intf.DO.HotNovelDO;
 import vip.xiaozhao.intern.baseUtil.intf.annotation.ReadOnly;
 import vip.xiaozhao.intern.baseUtil.intf.entity.HotNovelInfo;
 import vip.xiaozhao.intern.baseUtil.intf.vo.NovelBasicInfoVo;
@@ -20,6 +19,6 @@ public interface SearchBookMapper {
     HotNovelInfo getHotNovelByNovelId(int novelId);
 
     @ReadOnly
-    List<HotNovelDO> getHotNovelList();
+    List<HotNovelInfo> getHotNovelList();
 
 }

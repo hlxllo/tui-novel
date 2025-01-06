@@ -42,7 +42,7 @@
           and status != 0
     </select>
 
-    <select id="getHotNovelList" resultType="vip.xiaozhao.intern.baseUtil.intf.DO.HotNovelDO">
+    <select id="getHotNovelList" resultType="vip.xiaozhao.intern.baseUtil.intf.entity.HotNovelInfo">
         SELECT id, bookName, bookId, times, status
         FROM search_hot
         WHERE status != 0

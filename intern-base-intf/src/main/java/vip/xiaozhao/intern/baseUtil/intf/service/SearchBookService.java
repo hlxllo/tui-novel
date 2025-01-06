@@ -1,6 +1,5 @@
 package vip.xiaozhao.intern.baseUtil.intf.service;
 
-import vip.xiaozhao.intern.baseUtil.intf.DO.HotNovelDO;
 import vip.xiaozhao.intern.baseUtil.intf.entity.HotNovelInfo;
 import vip.xiaozhao.intern.baseUtil.intf.vo.NovelBasicInfoVo;
 
@@ -16,6 +15,6 @@ public interface SearchBookService {
 
     HotNovelInfo getHotNovelByNovelId(int novelId);
 
-    List<HotNovelDO> getHotNovelList();
+    List<HotNovelInfo> getHotNovelList();
 
 }

@@ -2,7 +2,6 @@ package vip.xiaozhao.intern.baseUtil.service.impl;
 
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
-import vip.xiaozhao.intern.baseUtil.intf.DO.HotNovelDO;
 import vip.xiaozhao.intern.baseUtil.intf.entity.HotNovelInfo;
 import vip.xiaozhao.intern.baseUtil.intf.mapper.SearchBookMapper;
 import vip.xiaozhao.intern.baseUtil.intf.service.NovelInfoService;
@@ -43,8 +42,8 @@ public class SearchBookServiceImpl implements SearchBookService {
     }
 
     @Override
-    public List<HotNovelDO> getHotNovelList() {
-        List<HotNovelDO> hotNovelList = searchBookMapper.getHotNovelList();
+    public List<HotNovelInfo> getHotNovelList() {
+        List<HotNovelInfo> hotNovelList = searchBookMapper.getHotNovelList();
         return hotNovelList;
     }
 

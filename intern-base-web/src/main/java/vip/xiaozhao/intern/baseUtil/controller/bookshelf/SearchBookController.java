@@ -2,9 +2,9 @@ package vip.xiaozhao.intern.baseUtil.controller.bookshelf;
 
 import cn.hutool.core.util.ObjUtil;
 import jakarta.annotation.Resource;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import vip.xiaozhao.intern.baseUtil.controller.BaseController;
-import vip.xiaozhao.intern.baseUtil.intf.DO.HotNovelDO;
 import vip.xiaozhao.intern.baseUtil.intf.constant.PageConstant;
 import vip.xiaozhao.intern.baseUtil.intf.constant.RedisConstant;
 import vip.xiaozhao.intern.baseUtil.intf.dto.ResponseDO;
@@ -12,12 +12,14 @@ import vip.xiaozhao.intern.baseUtil.intf.entity.HotNovelInfo;
 import vip.xiaozhao.intern.baseUtil.intf.entity.NovelInfo;
 import vip.xiaozhao.intern.baseUtil.intf.service.NovelInfoService;
 import vip.xiaozhao.intern.baseUtil.intf.service.SearchBookService;
+import vip.xiaozhao.intern.baseUtil.intf.utils.ConvertUtils;
 import vip.xiaozhao.intern.baseUtil.intf.utils.redis.RedisUtils;
 import vip.xiaozhao.intern.baseUtil.intf.vo.NovelBasicInfoVo;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/tuitui3/searchBook")
@@ -28,6 +30,9 @@ public class SearchBookController extends BaseController {
 
     @Resource
     private NovelInfoService novelInfoService;
+
+    @Resource
+    private RedisTemplate redisTemplate;
 
     // 全文检索小说（书名和作者）
     @GetMapping("/searchNovelList")
@@ -43,7 +48,7 @@ public class SearchBookController extends BaseController {
 
     // 增加搜索次数
     @PostMapping("/incrementNovelSearchNum/{novelId}")
-    public ResponseDO incrementNovelSearchNum(@PathVariable(required = true) int novelId) {
+    public ResponseDO incrementNovelSearchNum(@PathVariable int novelId) {
         if (novelId < 1) {
             return ResponseDO.fail("参数错误");
         }
@@ -68,22 +73,22 @@ public class SearchBookController extends BaseController {
     // 获取热榜小说（10本）
     @GetMapping("/getHotNovelList")
     public ResponseDO getHotNovelList() {
-        String redisHotNovelList = RedisUtils.get(RedisConstant.HOT_NOVEL_LIST);
-        if (redisHotNovelList != null) {
-            return ResponseDO.success(redisHotNovelList);
+        Object o = redisTemplate.opsForValue().get(RedisConstant.HOT_NOVEL_LIST);
+        // 缓存里有直接返回
+        if (!ObjUtil.isEmpty(o)) {
+            List<HotNovelInfo> hotNovels = ConvertUtils.convert2List(o, HotNovelInfo.class);
+            return ResponseDO.success(hotNovels);
         }
-        List<HotNovelDO> hotNovelList = searchBookService.getHotNovelList();
-        RedisUtils.set(RedisConstant.HOT_NOVEL_LIST, hotNovelList, RedisUtils.EXRP_ONE_HOUR);
-        if (hotNovelList.isEmpty()) {
-            return ResponseDO.success(null);
-        }
+        // 没有再去查表
+        List<HotNovelInfo> hotNovelList = searchBookService.getHotNovelList();
+        redisTemplate.opsForValue().set(RedisConstant.HOT_NOVEL_LIST, hotNovelList, RedisUtils.EXRP_ONE_HOUR, TimeUnit.SECONDS);
         Collections.shuffle(hotNovelList);
-        List<HotNovelDO> randomHotNovels = new ArrayList<>();
+        List<HotNovelInfo> vos = new ArrayList<>();
         int count = Math.min(10, hotNovelList.size());
         for (int i = 0; i < count; i++) {
-            randomHotNovels.add(hotNovelList.get(i));
+            vos.add(hotNovelList.get(i));
         }
-        return ResponseDO.success(randomHotNovels);
+        return ResponseDO.success(vos);
     }
 
 
