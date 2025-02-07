@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="vip.xiaozhao.intern.baseUtil.intf.mapper.MessageMapper">
+
+    <insert id="insertMessageLevel">
+        INSERT INTO message_level (userId, novelId)
+        VALUES (#{userId}, #{novelId})
+    </insert>
+
+    <update id="upgradeLevel">
+        UPDATE message_level
+        SET level = #{level}
+        WHERE userId = #{userId}
+          AND novelId = #{novelId}
+    </update>
+
+    <select id="getLastMessage" resultType="vip.xiaozhao.intern.baseUtil.intf.entity.Message">
+        SELECT id,
+               userId,
+               novelId,
+               chapterId,
+               sendTime
+        FROM message
+        WHERE userId = #{userId}
+          AND novelId = #{novelId}
+          AND chapterId = #{chapterId}
+        ORDER BY sendTime DESC LIMIT 1
+    </select>
+
+    <select id="getMessageLevel" resultType="java.lang.Integer">
+        SELECT level
+        FROM message_level
+        WHERE userId = #{userId}
+          AND novelId = #{novelId}
+    </select>
+</mapper>

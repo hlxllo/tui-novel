@@ -1,20 +1,27 @@
 package vip.xiaozhao.intern.baseUtil.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ObjUtil;
 import jakarta.annotation.Resource;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vip.xiaozhao.intern.baseUtil.intf.constant.RedisConstant;
+import vip.xiaozhao.intern.baseUtil.intf.entity.Message;
 import vip.xiaozhao.intern.baseUtil.intf.entity.NovelInfo;
 import vip.xiaozhao.intern.baseUtil.intf.entity.Bookshelf;
-import vip.xiaozhao.intern.baseUtil.intf.entity.SubscribeAudit;
 import vip.xiaozhao.intern.baseUtil.intf.mapper.BookShelfMapper;
+import vip.xiaozhao.intern.baseUtil.intf.mapper.MessageMapper;
 import vip.xiaozhao.intern.baseUtil.intf.service.BookShelfService;
 import vip.xiaozhao.intern.baseUtil.intf.service.NovelInfoService;
 import vip.xiaozhao.intern.baseUtil.intf.utils.ConvertUtils;
+import vip.xiaozhao.intern.baseUtil.intf.utils.MessageUtil;
 import vip.xiaozhao.intern.baseUtil.intf.utils.redis.RedisUtils;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +40,9 @@ public class BookShelfServiceImpl implements BookShelfService {
 
     @Resource
     private RedisTemplate redisTemplate;
+
+    @Resource
+    private MessageMapper messageMapper;
 
 
     @Override
@@ -57,13 +67,58 @@ public class BookShelfServiceImpl implements BookShelfService {
 
     @Override
     public void readChapter(int userId, int novelId, int chapterId) throws Exception {
-        List<SubscribeAudit> subscribeAudit = bookShelfMapper.getSubscribeAuditByUserIdAndNovelId(userId, novelId);
-
-        if (!CollUtil.isEmpty(subscribeAudit)) {
-            bookShelfMapper.updateSubscribeAuditChapterId(userId, novelId, chapterId);
-        } else {
-            bookShelfMapper.readChapter(userId, novelId, chapterId);
+        // 先判断是否订阅
+        List<Bookshelf> bookshelves = bookShelfMapper.getBookShelfByUserId(userId);
+        if (CollUtil.isEmpty(bookshelves)) {
+            throw new RuntimeException("用户没有订阅该小说");
         }
+        bookshelves = bookshelves.stream().filter(b -> b.getNovelId() == novelId).toList();
+        if (CollUtil.isEmpty(bookshelves)) {
+            throw new RuntimeException("用户没有订阅该小说");
+        }
+        Bookshelf bookshelf = bookshelves.get(0);
+        if (ObjUtil.isEmpty(bookshelf)) {
+            throw new RuntimeException("用户没有订阅该小说");
+        }
+        // 获取小说最新更新时间
+        Date lastUpdateTime = bookshelf.getLastUpdateTime();
+        // 小说从未更新过，说明用户主动，提升等级
+        if (ObjUtil.isEmpty(lastUpdateTime)) {
+            lastUpdateTime = new Date();
+        }
+        // 获取最后一次发送消息时间
+        Message message = messageMapper.getLastMessage(userId, novelId, chapterId);
+        Date lastSendTime;
+        // 从未发送过消息，说明用户主动，应该提升等级
+        if (ObjUtil.isEmpty(message)) {
+            lastSendTime = new Date();
+        } else {
+            lastSendTime = message.getSendTime();
+        }
+        // 计算到当前时间的差值
+        Instant now = Instant.now();
+        long updateGap = Duration.between(lastUpdateTime.toInstant(), now).toMinutes();
+        long sendGap = Duration.between(lastSendTime.toInstant(), now).toMinutes();
+        // 获取最小差值进行等级变更
+        long minGap = Math.min(updateGap, sendGap);
+        int level = MessageUtil.getLevel(minGap);
+        // 获取发送等级
+        Integer messageLevel = messageMapper.getMessageLevel(userId, novelId);
+        if (messageLevel == null) {
+            messageLevel = 0;
+        }
+        // 等级 345 且本次比之前等级高的用户升一级
+        if (messageLevel >= 3 && messageLevel > level) {
+            messageMapper.upgradeLevel(userId, novelId, messageLevel - 1);
+        }
+        // 向流水表中插入数据
+        bookShelfMapper.readChapter(userId, novelId, chapterId, (int) minGap);
+        //List<SubscribeAudit> subscribeAudit = bookShelfMapper.getLastSubscribeAuditsByUserIdAndNovelId(userId, novelId);
+        //if (!CollUtil.isEmpty(subscribeAudit)) {
+        //    bookShelfMapper.updateSubscribeAuditChapterId(userId, novelId, chapterId);
+        //} else {
+        //    bookShelfMapper.readChapter(userId, novelId, chapterId);
+        //}
         // 删除缓存防止脏读
         redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
     }
@@ -106,6 +161,7 @@ public class BookShelfServiceImpl implements BookShelfService {
     }
 
     @Override
+    @Transactional
     public void subscribeNovel(int userId, int novelId) throws Exception {
         List<Bookshelf> books = getBookShelfByUserId(userId);
         if (books.size() >= 5) {
@@ -114,6 +170,12 @@ public class BookShelfServiceImpl implements BookShelfService {
         NovelInfo novelInfo = novelInfoService.getNovelInfoByNovelId(novelId);
         Bookshelf bookshelf = getBookshelf(userId, novelId, novelInfo);
         bookShelfMapper.subscribeBook(bookshelf);
+        // 如果是第一次订阅，新增消息等级表
+        int level = messageMapper.getMessageLevel(userId, novelId);
+        if (level == 0) {
+            // 默认为最高级
+            messageMapper.insertMessageLevel(userId, novelId);
+        }
         // 删除缓存防止脏读
         redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
 

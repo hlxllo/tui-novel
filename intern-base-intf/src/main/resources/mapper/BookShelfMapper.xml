@@ -3,8 +3,8 @@
 <mapper namespace="vip.xiaozhao.intern.baseUtil.intf.mapper.BookShelfMapper">
 
     <insert id="readChapter">
-        insert into subscribe_audit (userId, novelId, chapterId)
-        values (#{userId}, #{novelId}, #{chapterId})
+        insert into subscribe_audit (userId, novelId, chapterId, gap)
+        values (#{userId}, #{novelId}, #{chapterId}, #{gap})
     </insert>
 
     <update id="updateTopBook">
@@ -35,8 +35,7 @@
                 #{authorName},
                 #{latestChapter},
                 #{lastUpdateTime},
-                #{coverUrl}
-               );
+                #{coverUrl});
 
     </update>
 
@@ -61,12 +60,12 @@
         )
     </update>
 
-    <update id="updateSubscribeAuditChapterId">
-        update subscribe_audit
-        set chapterId = #{chapterId}
-        where userId = #{userId}
-          and novelId = #{novelId}
-    </update>
+    <!--<update id="updateSubscribeAuditChapterId">-->
+    <!--    update subscribe_audit-->
+    <!--    set chapterId = #{chapterId}-->
+    <!--    where userId = #{userId}-->
+    <!--      and novelId = #{novelId}-->
+    <!--</update>-->
 
     <update id="deleteBookByUserIdAndNovelId">
         update bookshelf
@@ -97,14 +96,17 @@
 
     </select>
 
-    <select id="getSubscribeAuditByUserIdAndNovelId"
+    <select id="getLastSubscribeAuditsByUserIdAndNovelId"
             resultType="vip.xiaozhao.intern.baseUtil.intf.entity.SubscribeAudit">
         SELECT id,
                userId,
                novelId,
-               ChapterId
+               chapterId,
+               gap
         FROM subscribe_audit
         WHERE userId = #{userId}
           AND novelId = #{novelId}
+        ORDER BY addTime DESC
+            LIMIT #{number};
     </select>
 </mapper>

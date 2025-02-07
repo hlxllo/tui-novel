@@ -16,9 +16,6 @@ public class SearchBookServiceImpl implements SearchBookService {
     @Resource
     private SearchBookMapper searchBookMapper;
 
-    @Resource
-    private NovelInfoService novelInfoService;
-
     @Override
     public List<NovelBasicInfoVo> searchNovelBasicList(int start, int pageSize, String query) {
 
