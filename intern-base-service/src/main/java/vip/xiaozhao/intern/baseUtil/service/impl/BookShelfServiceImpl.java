@@ -113,12 +113,6 @@ public class BookShelfServiceImpl implements BookShelfService {
         }
         // 向流水表中插入数据
         bookShelfMapper.readChapter(userId, novelId, chapterId, (int) minGap);
-        //List<SubscribeAudit> subscribeAudit = bookShelfMapper.getLastSubscribeAuditsByUserIdAndNovelId(userId, novelId);
-        //if (!CollUtil.isEmpty(subscribeAudit)) {
-        //    bookShelfMapper.updateSubscribeAuditChapterId(userId, novelId, chapterId);
-        //} else {
-        //    bookShelfMapper.readChapter(userId, novelId, chapterId);
-        //}
         // 删除缓存防止脏读
         redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
     }
