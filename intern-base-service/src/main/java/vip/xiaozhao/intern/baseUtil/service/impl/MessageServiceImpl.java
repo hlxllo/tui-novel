@@ -57,14 +57,16 @@ public class MessageServiceImpl implements MessageService {
                 int lastReadLevel = MessageUtil.getLevel(lastReadGap);
                 // 获取最后一次发送通知时间
                 Message message = messageMapper.getLastMessage(userId, novelId);
-                int lastMessageLevel = 1;
+                int lastMessageGapLevel = 1;
                 if (!ObjUtil.isEmpty(message)) {
                     Date lastMessageTime = message.getSendTime();
                     long lastMessageGap = Duration.between(lastMessageTime.toInstant(), now).toMinutes();
-                    lastMessageLevel = MessageUtil.getLevel(lastMessageGap);
+                    lastMessageGapLevel = MessageUtil.getLevel(lastMessageGap);
                 }
-                // 决定最终等级（三者最大值，定时任务只用于降级）
-                level = Math.max(highestLevel, Math.max(lastReadLevel, lastMessageLevel));
+                // 获取上次等级
+                Integer lastMessageLevel = messageMapper.getMessageLevel(userId, novelId);
+                // 决定最终等级（四者最大值，定时任务只用于降级）
+                level = Math.max(highestLevel, Math.max(lastReadLevel, Math.max(lastMessageGapLevel, lastMessageLevel)));
             }
             // 更新用户等级
             messageMapper.upgradeLevel(userId, novelId, level);
