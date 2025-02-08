@@ -13,7 +13,7 @@ public interface BookShelfMapper {
     @ReadOnly
     List<Bookshelf> getBookShelfByUserId(int userId);
 
-    void readChapter(int userId, int novelId, int chapterId, int gap);
+    void readChapter(int userId, int novelId, int chapterId, int level);
 
     void updateTopBook(int userId, int novelId);
 
@@ -28,7 +28,7 @@ public interface BookShelfMapper {
     @ReadOnly
     List<SubscribeAudit> getLastSubscribeAuditsByUserIdAndNovelId(int userId, int novelId, int number);
 
-    //void updateSubscribeAuditChapterId(int userId, int novelId, int chapterId);
+    List<Bookshelf> getAllBookshelves();
 
 
 }

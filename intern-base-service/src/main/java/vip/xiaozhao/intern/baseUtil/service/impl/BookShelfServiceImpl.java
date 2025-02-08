@@ -112,7 +112,7 @@ public class BookShelfServiceImpl implements BookShelfService {
             messageMapper.upgradeLevel(userId, novelId, messageLevel - 1);
         }
         // 向流水表中插入数据
-        bookShelfMapper.readChapter(userId, novelId, chapterId, (int) minGap);
+        bookShelfMapper.readChapter(userId, novelId, chapterId, level);
         // 删除缓存防止脏读
         redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
     }

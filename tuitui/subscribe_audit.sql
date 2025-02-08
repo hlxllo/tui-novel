@@ -6,7 +6,7 @@ create table subscribe_audit
     novelId    int                                null comment '小说ID',
     ChapterId  int                                null comment '章节ID',
     addTime    datetime default CURRENT_TIMESTAMP null comment '添加时间',
-    gap        int                                not null comment '间隔时间',
+    level      tinyint                            not null comment '消息等级',
     updateTime datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间'
 )
     comment '阅读信息';

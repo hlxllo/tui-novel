@@ -3,8 +3,8 @@
 <mapper namespace="vip.xiaozhao.intern.baseUtil.intf.mapper.BookShelfMapper">
 
     <insert id="readChapter">
-        insert into subscribe_audit (userId, novelId, chapterId, gap)
-        values (#{userId}, #{novelId}, #{chapterId}, #{gap})
+        insert into subscribe_audit (userId, novelId, chapterId, level)
+        values (#{userId}, #{novelId}, #{chapterId}, #{level})
     </insert>
 
     <update id="updateTopBook">
@@ -60,13 +60,6 @@
         )
     </update>
 
-    <!--<update id="updateSubscribeAuditChapterId">-->
-    <!--    update subscribe_audit-->
-    <!--    set chapterId = #{chapterId}-->
-    <!--    where userId = #{userId}-->
-    <!--      and novelId = #{novelId}-->
-    <!--</update>-->
-
     <update id="deleteBookByUserIdAndNovelId">
         update bookshelf
         set status = 0
@@ -108,5 +101,23 @@
           AND novelId = #{novelId}
         ORDER BY addTime DESC
             LIMIT #{number};
+    </select>
+
+    <select id="getAllBookshelves" resultType="vip.xiaozhao.intern.baseUtil.intf.entity.Bookshelf">
+        SELECT id,
+               userId,
+               novelId,
+               LatestchapterId,
+               BookName,
+               AuthorName,
+               Latestchapter,
+               LastUpdateTime,
+               coverUrl,
+               isRead,
+               isTop
+        FROM bookshelf
+--         TODO 待定
+        ORDER BY
+            LastUpdateTime DESC;
     </select>
 </mapper>

@@ -13,5 +13,6 @@ public class SubscribeAudit {
     private int userId;
     private int novelId;
     private int chapterId;
-    private int gap;
+    // 用户等级
+    private int level;
 }

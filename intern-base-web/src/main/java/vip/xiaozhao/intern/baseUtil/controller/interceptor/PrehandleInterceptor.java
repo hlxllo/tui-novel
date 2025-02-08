@@ -56,7 +56,7 @@ public class PrehandleInterceptor implements HandlerInterceptor {
 
         String token = request.getHeader(CommonConstant.LOGIN_HEAD_KEY);
         //int currentUserId = JjwtUtil.verifyLoginToken(token);
-        int currentUserId = 6;
+        int currentUserId = 10;
 
         if (currentUserId < 0) {//非法请求
 
