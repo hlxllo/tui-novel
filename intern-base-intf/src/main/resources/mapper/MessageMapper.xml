@@ -23,7 +23,6 @@
         FROM message
         WHERE userId = #{userId}
           AND novelId = #{novelId}
-          AND chapterId = #{chapterId}
         ORDER BY sendTime DESC LIMIT 1
     </select>
 

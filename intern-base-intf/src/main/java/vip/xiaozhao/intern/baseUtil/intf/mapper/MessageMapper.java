@@ -9,7 +9,7 @@ import vip.xiaozhao.intern.baseUtil.intf.entity.Message;
  */
 public interface MessageMapper {
 
-    Message getLastMessage(int userId, int novelId, int chapterId);
+    Message getLastMessage(int userId, int novelId);
 
     Integer getMessageLevel(int userId, int novelId);
 

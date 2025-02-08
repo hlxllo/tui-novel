@@ -87,7 +87,7 @@ public class BookShelfServiceImpl implements BookShelfService {
             lastUpdateTime = new Date();
         }
         // 获取最后一次发送消息时间
-        Message message = messageMapper.getLastMessage(userId, novelId, chapterId);
+        Message message = messageMapper.getLastMessage(userId, novelId);
         Date lastSendTime;
         // 从未发送过消息，说明用户主动，应该提升等级
         if (ObjUtil.isEmpty(message)) {

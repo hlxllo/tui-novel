@@ -95,7 +95,8 @@
                userId,
                novelId,
                chapterId,
-               gap
+               level,
+               addTime
         FROM subscribe_audit
         WHERE userId = #{userId}
           AND novelId = #{novelId}

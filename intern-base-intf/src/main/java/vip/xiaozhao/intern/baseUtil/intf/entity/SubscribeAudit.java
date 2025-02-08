@@ -15,4 +15,5 @@ public class SubscribeAudit {
     private int chapterId;
     // 用户等级
     private int level;
+    private Date addTime;
 }
