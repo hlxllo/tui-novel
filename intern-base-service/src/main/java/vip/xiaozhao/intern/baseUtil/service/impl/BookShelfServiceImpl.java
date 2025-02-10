@@ -24,6 +24,9 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -47,6 +50,7 @@ public class BookShelfServiceImpl implements BookShelfService {
 
     @Override
     public List<Bookshelf> getBookShelfByUserId(int userId) throws Exception {
+        // 缓存版
         String key = RedisConstant.PRE_USER_ID + userId;
         Object o = redisTemplate.opsForValue().get(key);
         List<Bookshelf> bookShelf;
@@ -61,6 +65,15 @@ public class BookShelfServiceImpl implements BookShelfService {
         } else {
             bookShelf = ConvertUtils.convert2List(o, Bookshelf.class);
         }
+
+        //// 直击数据库版
+        //List<Bookshelf> bookShelf;
+        //bookShelf = bookShelfMapper.getBookShelfByUserId(userId);
+        //if (bookShelf == null) {
+        //    throw new RuntimeException("用户不存在");
+        //}
+        //// 顶置排序
+        //bookShelf.sort((o1, o2) -> o2.getIsTop() - o1.getIsTop());
         return bookShelf;
     }
 
@@ -206,38 +219,28 @@ public class BookShelfServiceImpl implements BookShelfService {
                 .collect(Collectors.toList());
 
         int totalSize = userIds.size();
-        for (int i = 0; i < totalSize; i += BATCH_SIZE) {
-            int end = Math.min(i + BATCH_SIZE, totalSize);
-            List<Integer> batchUserIds = userIds.subList(i, end);
-            bookShelfMapper.updateIsReadByNovelId(novelId, batchUserIds);
-        }
+        // 正常更新
+        //for (int i = 0; i < totalSize; i += BATCH_SIZE) {
+        //    int end = Math.min(i + BATCH_SIZE, totalSize);
+        //    List<Integer> ids = userIds.subList(i, end);
+        //    bookShelfMapper.updateIsReadByNovelId(novelId, ids);
+        //}
 
-        for (int i = 0; i < totalSize; i++) {
-            int userId = userIds.get(i);
-            // 删除缓存防止脏读
-            redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
-        }
-         /*
-         或者使用多线程处理
-        // 批处理大小
-        final int batchSize = 100; // 根据需要调整
-        int totalSize = userIDs.size();
-
+        // 或者使用多线程处理
         // 创建线程池
-        ExecutorService executor = Executors.newFixedThreadPool(10); // 根据需要调整线程数
-        CountDownLatch latch = new CountDownLatch((totalSize + batchSize - 1) / batchSize); // 计算总的批次数
-
+        ExecutorService executor = Executors.newFixedThreadPool(17);
+        CountDownLatch latch = new CountDownLatch((totalSize + BATCH_SIZE - 1) / BATCH_SIZE);
         // 分批处理
-        for (int i = 0; i < totalSize; i += batchSize) {
-            final List<Integer> batchUserIDs = userIDs.subList(i, Math.min(i + batchSize, totalSize));
+        for (int i = 0; i < totalSize; i += BATCH_SIZE) {
+            final List<Integer> ids = userIds.subList(i, Math.min(i + BATCH_SIZE, totalSize));
 
             // 提交任务到线程池
             executor.submit(() -> {
                 try {
                     // 数据库更新操作
-                    bookShelfMapper.updateIsReadByNovelId(NovelId, batchUserIDs);
+                    bookShelfMapper.updateIsReadByNovelId(novelId, ids);
                 } finally {
-                    latch.countDown(); // 完成该批次后减少计数
+                    latch.countDown();
                 }
             });
         }
@@ -246,12 +249,16 @@ public class BookShelfServiceImpl implements BookShelfService {
         try {
             latch.await();
         } catch (InterruptedException e) {
-            e.printStackTrace(); // 处理异常
+            e.printStackTrace();
         } finally {
-            executor.shutdown(); // 关闭线程池
+            executor.shutdown();
         }
 
-          */
+        for (int i = 0; i < totalSize; i++) {
+            int userId = userIds.get(i);
+            // 删除缓存防止脏读
+            redisTemplate.delete(RedisConstant.PRE_USER_ID + userId);
+        }
 
     }
 
