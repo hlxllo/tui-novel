@@ -178,8 +178,8 @@ public class BookShelfServiceImpl implements BookShelfService {
         Bookshelf bookshelf = getBookshelf(userId, novelId, novelInfo);
         bookShelfMapper.subscribeBook(bookshelf);
         // 如果是第一次订阅，新增消息等级表
-        int level = messageMapper.getMessageLevel(userId, novelId);
-        if (level == 0) {
+        Integer level = messageMapper.getMessageLevel(userId, novelId);
+        if (level == null) {
             // 默认为最高级
             messageMapper.insertMessageLevel(userId, novelId);
         }

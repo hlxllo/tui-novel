@@ -27,7 +27,7 @@ public interface BookShelfMapper {
 
     @ReadOnly
     List<SubscribeAudit> getLastSubscribeAuditsByUserIdAndNovelId(int userId, int novelId, int number);
-
+    @ReadOnly
     List<Bookshelf> getAllBookshelves();
 
 

@@ -1,5 +1,6 @@
 package vip.xiaozhao.intern.baseUtil.intf.mapper;
 
+import vip.xiaozhao.intern.baseUtil.intf.annotation.ReadOnly;
 import vip.xiaozhao.intern.baseUtil.intf.entity.Message;
 
 /**
@@ -9,8 +10,9 @@ import vip.xiaozhao.intern.baseUtil.intf.entity.Message;
  */
 public interface MessageMapper {
 
+    @ReadOnly
     Message getLastMessage(int userId, int novelId);
-
+    @ReadOnly
     Integer getMessageLevel(int userId, int novelId);
 
     void upgradeLevel(int userId, int novelId, int level);
